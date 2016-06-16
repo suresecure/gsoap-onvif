@@ -27,3 +27,14 @@
 *.exe
 *.out
 *.app
+
+*.swp
+
+*.suo
+*.sdf
+*.opensdf
+win32/Debug
+win32/onvif-server/Debug
+win32/*.log
+
+gsoap-2.8
