@@ -1,0 +1,1 @@
+wsdl2h.exe -t ../gsoap-2.8/gsoap/typemap.dat -o onvif.h http://www.onvif.org/onvif/ver10/device/wsdl/devicemgmt.wsdl http://www.onvif.org/onvif/ver10/events/wsdl/event.wsdl http://www.onvif.org/onvif/ver10/media/wsdl/media.wsdl http://www.onvif.org/onvif/ver10/analyticsdevice.wsdl

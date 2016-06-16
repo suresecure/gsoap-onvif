@@ -1,0 +1,1 @@
+soapcpp2.exe -L -d ../onvifgen -I ../gsoap-2.8/gsoap/import/;../gsoap-2.8/gsoap/ onvif.h
