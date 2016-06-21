@@ -88,11 +88,13 @@
     <ClCompile Include="..\..\onvifgen\soapClient.cpp" />
     <ClCompile Include="..\..\onvifgen\soapServer.cpp" />
     <ClCompile Include="..\..\src\onvif_server.cpp" />
+    <ClCompile Include="..\..\src\onvif_server_main.cpp" />
     <ClCompile Include="..\..\src\server_operations_analytics_device.cpp" />
     <ClCompile Include="..\..\src\server_operations_device.cpp" />
     <ClCompile Include="..\..\src\server_operations_deviceio.cpp" />
     <ClCompile Include="..\..\src\server_operations_event.cpp" />
     <ClCompile Include="..\..\src\server_operations_media.cpp" />
+    <ClCompile Include="..\..\src\system_utils_win32.cpp" />
     <ClCompile Include="..\..\src\wsdd_event_handlers.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -104,6 +106,7 @@
     <ClInclude Include="..\..\include\onvif_server.h" />
     <ClInclude Include="..\..\onvifgen\soapH.h" />
     <ClInclude Include="..\..\onvifgen\soapStub.h" />
+    <ClInclude Include="..\..\src\system_utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

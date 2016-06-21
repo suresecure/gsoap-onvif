@@ -18,8 +18,10 @@ void wsdd_event_Hello(struct soap *soap, unsigned int InstanceId, const char *Se
 {}
 void wsdd_event_Bye(struct soap *soap, unsigned int InstanceId, const char *SequenceId, unsigned int MessageNumber, const char *MessageID, const char *RelatesTo, const char *EndpointReference, const char *Types, const char *Scopes, const char *MatchBy, const char *XAddrs, unsigned int *MetadataVersion)
 {}
+//#include <Mswsock.h>
 soap_wsdd_mode wsdd_event_Probe(struct soap *soap, const char *MessageID, const char *ReplyTo, const char *Types, const char *Scopes, const char *MatchBy, struct wsdd__ProbeMatchesType *matches)
 {
+	//wsarecvmsg
 	printf("%s,%d\n", __FUNCTION__, __LINE__);
 	printf("MessageID:%s\n", MessageID);
 	printf("ReplyTo:%s\n", ReplyTo);
@@ -46,6 +48,14 @@ soap_wsdd_mode wsdd_event_Probe(struct soap *soap, const char *MessageID, const 
 	if (soap_wsdd_ProbeMatches(soap, "soap.udp://", soap_wsa_rand_uuid(soap), MessageID, NULL, matches) != SOAP_OK)
 		//if (soap_wsdd_ProbeMatches(soap, NULL, soap_wsa_rand_uuid(soap), MessageID, NULL, matches) != SOAP_OK) 
 		soap_print_fault(soap, stderr);
+
+	struct sockaddr sock_addr;
+	int addrlen = sizeof(sock_addr);
+	struct in_addr in_addr;
+	int ret = getsockname(soap->socket, &sock_addr, &addrlen);
+	struct sockaddr_in *sock_addr_in = (struct sockaddr_in*)&sock_addr;
+	char str[INET_ADDRSTRLEN];
+	inet_ntop(AF_INET, &(sock_addr_in->sin_addr), str, INET_ADDRSTRLEN);
 
 	//return 0;
 	//return SOAP_WSDD_MANAGED;

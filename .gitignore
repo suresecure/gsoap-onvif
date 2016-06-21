@@ -38,3 +38,4 @@ win32/onvif-server/Debug
 win32/*.log
 
 gsoap-2.8
+*.log

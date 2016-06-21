@@ -36,7 +36,7 @@ class OnvifServer{
 public:
 	OnvifServer();
 	~OnvifServer();
-	int Start(std::string host, int port);
+	int Start(int network_interface_idx, int port);
 	void Stop();
 
 	void AddProfile(const ProfileInfo &info);
@@ -46,15 +46,36 @@ public:
 	struct soap* GetDiscoverySoap(){ return discovery_soap_; }
 	struct soap* GetOnvifSoap(){ return onvif_soap_; }
 	bool IsStop(){ return stop_; }
-	std::string GetHost(){ return host_; }
+	//const std::string& GetHost(){ return host_; }
+	int GetNetworkInterfaceIdx(){ return network_interface_idx_; }
 	int GetPort(){ return port_; }
+
+	void SetFirmwareVersion(const std::string& ver){ firmware_version_ = ver; }
+	void SetManufacturer(const std::string& manu){ manufacturer_ = manu; }
+	void SetModel(const std::string& model){ model_ = model; }
+	void SetSerailNumber(const std::string& sn){ serial_number_ = sn; }
+	void SetHardwareId(const std::string& hid){ hardwareid_ = hid; }
+
+	const std::string& GetFirmwareVersion(){ return firmware_version_ ; }
+	const std::string& GetManufacturer(){ return manufacturer_; }
+	const std::string& GetModel(){ return model_; }
+	const std::string& GetSerailNumber(){ return serial_number_; }
+	const std::string& GetHardwareId(){ return hardwareid_; }
 private:
 	std::vector<ProfileInfo> profiles_;
-	std::string host_;
+	//std::string host_;
+	int network_interface_idx_;
 	int port_;
 	bool stop_;
 	struct soap *discovery_soap_;
 	struct soap *onvif_soap_;
 	THREAD_TYPE discovery_server_thread_;
 	THREAD_TYPE onvif_server_thread_;
+
+	//identification
+	std::string firmware_version_;
+	std::string manufacturer_;
+	std::string model_;
+	std::string serial_number_;
+	std::string hardwareid_;
 };

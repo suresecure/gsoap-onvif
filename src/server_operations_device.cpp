@@ -1,5 +1,7 @@
 #include "soapStub.h"
 #include "soapH.h"
+#include "onvif_server.h"
+#include "system_utils.h"
 
 #ifdef WIN32
 #define KKKK
@@ -11,6 +13,19 @@
 /** Web service operation '__tds__GetCapabilities' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __tds__GetCapabilities(struct soap*soap, _tds__GetCapabilities *tds__GetCapabilities, _tds__GetCapabilitiesResponse &tds__GetCapabilitiesResponse)
 {
+	struct sockaddr sock_addr;
+	int addrlen = sizeof(sock_addr);
+	struct in_addr in_addr;
+	int ret = getsockname(soap->socket, &sock_addr, &addrlen);
+	struct sockaddr_in *sock_addr_in = (struct sockaddr_in*)&sock_addr;
+	char str[INET_ADDRSTRLEN];
+
+	inet_ntop(AF_INET, &(sock_addr_in->sin_addr), str, INET_ADDRSTRLEN);
+
+	//wchar_t addrstr[20];
+	//DWORD addrstrlen = 20;
+	//WSAAddressToString(&sock_addr, addrlen, NULL, addrstr, &addrstrlen);
+
 	tds__GetCapabilitiesResponse.Capabilities = soap_new_tt__Capabilities(soap);
 
 	tt__DeviceCapabilities *device_capabilities = soap_new_tt__DeviceCapabilities(soap);
@@ -42,7 +57,7 @@ SOAP_FMAC5 int SOAP_FMAC6 __tds__GetCapabilities(struct soap*soap, _tds__GetCapa
 	tds__GetCapabilitiesResponse.Capabilities->Extension = cap_ext;
 
 	printf("Device: Get capabilities!\n");
-	return SOAP_OK; 
+	return SOAP_OK;
 }
 
 /** Web service operation '__tds__GetServices' (returns SOAP_OK or error code) */
@@ -64,27 +79,42 @@ SOAP_FMAC5 int SOAP_FMAC6 __tds__GetServices(struct soap* soap, _tds__GetService
 	tds__GetServicesResponse.Service.push_back(media_service);
 	tds__GetServicesResponse.Service.push_back(device_io_service);
 	printf("Get services!\n");
-	return SOAP_OK; 
+	return SOAP_OK;
 }
 /** Web service operation '__tds__GetDeviceInformation' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__GetDeviceInformation(struct soap*, _tds__GetDeviceInformation *tds__GetDeviceInformation, _tds__GetDeviceInformationResponse &tds__GetDeviceInformationResponse)
+SOAP_FMAC5 int SOAP_FMAC6 __tds__GetDeviceInformation(struct soap*soap, _tds__GetDeviceInformation *tds__GetDeviceInformation, _tds__GetDeviceInformationResponse &tds__GetDeviceInformationResponse)
 {
-	tds__GetDeviceInformationResponse.FirmwareVersion;
-	tds__GetDeviceInformationResponse.Manufacturer;
-	tds__GetDeviceInformationResponse.Model;
-	tds__GetDeviceInformationResponse.SerialNumber;
-	tds__GetDeviceInformationResponse.HardwareId;
-	printf("__tds__GetDeviceInformation\n"); 
+	OnvifServer *onvif_server = (OnvifServer*)soap->user;
+	tds__GetDeviceInformationResponse.FirmwareVersion = onvif_server->GetFirmwareVersion();
+	tds__GetDeviceInformationResponse.Manufacturer = onvif_server->GetManufacturer();
+	tds__GetDeviceInformationResponse.Model = onvif_server->GetModel();
+	tds__GetDeviceInformationResponse.SerialNumber = onvif_server->GetSerailNumber();
+	tds__GetDeviceInformationResponse.HardwareId = onvif_server->GetHardwareId();
+	printf("__tds__GetDeviceInformation\n");
 	return SOAP_OK;
 }
 /** Web service operation '__tds__GetScopes' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __tds__GetScopes(struct soap*soap, _tds__GetScopes *tds__GetScopes, _tds__GetScopesResponse &tds__GetScopesResponse)
-{ 
+{
+	std::vector<std::string> scope_items;
+	scope_items.push_back("onvif://www.onvif.org/Profile/Streaming");
+	scope_items.push_back("onvif://www.onvif.org/Profile/G");
+	scope_items.push_back("onvif://www.onvif.org/Profile/C");
+	scope_items.push_back("onvif://www.onvif.org/location/country/china");
+	scope_items.push_back("onvif://www.onvif.org/type/video_encoder");
+	scope_items.push_back("onvif://www.onvif.org/name/IP-Camera");
+	//scope_items.push_back("onvif://www.onvif.org/hardware/HI3518C");
+
 	tds__GetScopesResponse.Scopes;
-	tt__Scope *scope = soap_new_tt__Scope(soap);
-	scope->ScopeDef = tt__ScopeDefinition__Fixed;
-	printf("__tds__GetScopes\n"); 
-	return SOAP_OK; 
+	for (int i = 0; i < scope_items.size(); ++i)
+	{
+		tt__Scope *scope = soap_new_tt__Scope(soap);
+		scope->ScopeDef = tt__ScopeDefinition__Fixed;
+		scope->ScopeItem = scope_items[i];
+		tds__GetScopesResponse.Scopes.push_back(scope);
+	}
+	printf("__tds__GetScopes\n");
+	return SOAP_OK;
 }
 /** Web service operation '__tds__GetServiceCapabilities' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __tds__GetServiceCapabilities(struct soap*, _tds__GetServiceCapabilities *tds__GetServiceCapabilities, _tds__GetServiceCapabilitiesResponse &tds__GetServiceCapabilitiesResponse)
@@ -92,16 +122,202 @@ SOAP_FMAC5 int SOAP_FMAC6 __tds__GetServiceCapabilities(struct soap*, _tds__GetS
 	printf("Get services capabilities!\n");
 	return SOAP_OK;
 }
-/** Web service operation '__tds__SetSystemDateAndTime' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__SetSystemDateAndTime(struct soap*, _tds__SetSystemDateAndTime *tds__SetSystemDateAndTime, _tds__SetSystemDateAndTimeResponse &tds__SetSystemDateAndTimeResponse){ printf("__tds__SetSystemDateAndTime\n"); return SOAP_OK; }
 /** Web service operation '__tds__GetSystemDateAndTime' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__GetSystemDateAndTime(struct soap*, _tds__GetSystemDateAndTime *tds__GetSystemDateAndTime, _tds__GetSystemDateAndTimeResponse &tds__GetSystemDateAndTimeResponse){ printf("__tds__GetSystemDateAndTime\n"); return SOAP_OK; }
+SOAP_FMAC5 int SOAP_FMAC6 __tds__GetSystemDateAndTime(struct soap*soap, _tds__GetSystemDateAndTime *tds__GetSystemDateAndTime, _tds__GetSystemDateAndTimeResponse &tds__GetSystemDateAndTimeResponse)
+{
+	tds__GetSystemDateAndTimeResponse.SystemDateAndTime;
+	tt__SystemDateTime *system_date_time = soap_new_tt__SystemDateTime(soap);
+	tds__GetSystemDateAndTimeResponse.SystemDateAndTime = system_date_time;
+	system_date_time->DateTimeType = tt__SetDateTimeType__Manual;
+	system_date_time->DaylightSavings = false;
+	system_date_time->TimeZone = soap_new_tt__TimeZone(soap);
+	system_date_time->TimeZone->TZ = "(GMT+08:00) Beijing, Chongqing, Hong Kong SAR, Urumqi";
+	//system_date_time->TimeZone->TZ = "UTC+08:00";
+
+	struct DateTime ldt = GetLocalDateTime();
+	tt__DateTime *local_date_time = soap_new_tt__DateTime(soap);
+	system_date_time->LocalDateTime = local_date_time;
+	tt__Date *local_date = soap_new_tt__Date(soap);
+	local_date_time->Date = local_date;
+	local_date->Year = ldt.year;
+	local_date->Month = ldt.month;
+	local_date->Day = ldt.day;
+	tt__Time *local_time = soap_new_tt__Time(soap);
+	local_date_time->Time = local_time;
+	local_time->Hour = ldt.hour;
+	local_time->Minute = ldt.minute;
+	local_time->Second = ldt.second;
+
+	struct DateTime udt = GetUtcDateTime();
+	tt__DateTime *utc_date_time = soap_new_tt__DateTime(soap);
+	system_date_time->UTCDateTime = utc_date_time;
+	tt__Date *utc_date = soap_new_tt__Date(soap);
+	utc_date_time->Date = utc_date;
+	utc_date->Year = udt.year;
+	utc_date->Month = udt.month;
+	utc_date->Day = udt.day;
+	tt__Time *utc_time = soap_new_tt__Time(soap);
+	utc_date_time->Time = utc_time;
+	utc_time->Hour = udt.hour;
+	utc_time->Minute = udt.minute;
+	utc_time->Second = udt.second;
+
+	printf("__tds__GetSystemDateAndTime\n");
+	return SOAP_OK;
+}
+/** Web service operation '__tds__SetSystemDateAndTime' (returns SOAP_OK or error code) */
+SOAP_FMAC5 int SOAP_FMAC6 __tds__SetSystemDateAndTime(struct soap*, _tds__SetSystemDateAndTime *tds__SetSystemDateAndTime, _tds__SetSystemDateAndTimeResponse &tds__SetSystemDateAndTimeResponse)
+{
+	tds__SetSystemDateAndTime->DateTimeType;
+	if (tds__SetSystemDateAndTime->DateTimeType == tt__SetDateTimeType__Manual &&
+		tds__SetSystemDateAndTime->UTCDateTime != NULL)
+	{
+		tt__DateTime *dt = tds__SetSystemDateAndTime->UTCDateTime;
+		struct DateTime udt;
+		udt.year = dt->Date->Year;
+		udt.month = dt->Date->Month;
+		udt.day = dt->Date->Day;
+		udt.hour = dt->Time->Hour;
+		udt.minute = dt->Time->Minute;
+		udt.second = dt->Time->Second;
+		SetUtcDateTime(udt);
+	}
+	struct DateTime udt;
+	printf("__tds__SetSystemDateAndTime\n");
+	return SOAP_OK;
+}
+
+/** Web service operation '__tds__GetHostname' (returns SOAP_OK or error code) */
+SOAP_FMAC5 int SOAP_FMAC6 __tds__GetHostname(struct soap*soap, _tds__GetHostname *tds__GetHostname, _tds__GetHostnameResponse &tds__GetHostnameResponse)
+{ 
+	tt__HostnameInformation *hostname = soap_new_tt__HostnameInformation(soap);
+	tds__GetHostnameResponse.HostnameInformation = hostname;
+	hostname->FromDHCP = false;
+	hostname->Name = soap_new_std__string(soap);
+	hostname->Name->assign(GetHostName());
+	printf("__tds__GetHostname\n"); 
+	return SOAP_OK; 
+}
+/** Web service operation '__tds__SetHostname' (returns SOAP_OK or error code) */
+SOAP_FMAC5 int SOAP_FMAC6 __tds__SetHostname(struct soap*, _tds__SetHostname *tds__SetHostname, _tds__SetHostnameResponse &tds__SetHostnameResponse){ printf("__tds__SetHostname\n"); return SOAP_OK; }
+/** Web service operation '__tds__GetDiscoveryMode' (returns SOAP_OK or error code) */
+SOAP_FMAC5 int SOAP_FMAC6 __tds__GetDiscoveryMode(struct soap*, _tds__GetDiscoveryMode *tds__GetDiscoveryMode, _tds__GetDiscoveryModeResponse &tds__GetDiscoveryModeResponse)
+{
+	tds__GetDiscoveryModeResponse.DiscoveryMode = tt__DiscoveryMode__Discoverable;
+	printf("__tds__GetDiscoveryMode\n");
+	return SOAP_OK;
+}
+/** Web service operation '__tds__SetDiscoveryMode' (returns SOAP_OK or error code) */
+SOAP_FMAC5 int SOAP_FMAC6 __tds__SetDiscoveryMode(struct soap*, _tds__SetDiscoveryMode *tds__SetDiscoveryMode, _tds__SetDiscoveryModeResponse &tds__SetDiscoveryModeResponse){ printf("__tds__SetDiscoveryMode\n"); return SOAP_OK; }
+
+/** Web service operation '__tds__GetNetworkInterfaces' (returns SOAP_OK or error code) */
+SOAP_FMAC5 int SOAP_FMAC6 __tds__GetNetworkInterfaces(struct soap* soap, _tds__GetNetworkInterfaces *tds__GetNetworkInterfaces, _tds__GetNetworkInterfacesResponse &tds__GetNetworkInterfacesResponse)
+{ 
+	OnvifServer *onvif_server = (OnvifServer*)soap->user;
+	bool dhcp_enabled;
+	std::string addr, gateway;
+	int prefix_length;
+
+	int idx = onvif_server->GetNetworkInterfaceIdx();
+	GetIpv4Address(idx, dhcp_enabled, addr, prefix_length, gateway);
+	//for (int i = 0; i < 2; ++i)
+	//{
+	tt__NetworkInterface * netinter = soap_new_tt__NetworkInterface(soap);
+	tds__GetNetworkInterfacesResponse.NetworkInterfaces.push_back(netinter);
+	netinter->token = "0";
+	netinter->Enabled = true;
+	tt__IPv4NetworkInterface *ipv4net = soap_new_tt__IPv4NetworkInterface(soap);
+	netinter->IPv4 = ipv4net;
+	ipv4net->Enabled = true;
+	tt__IPv4Configuration *ipv4cfg = soap_new_tt__IPv4Configuration(soap);
+	ipv4net->Config = ipv4cfg;
+	//ipv4cfg->DHCP = dhcp_enabled;
+	ipv4cfg->DHCP = false;
+	tt__PrefixedIPv4Address *ipv4addr = soap_new_tt__PrefixedIPv4Address(soap);
+	ipv4cfg->Manual.push_back(ipv4addr);
+	ipv4addr->Address = addr;
+	ipv4addr->PrefixLength = prefix_length;
+	//}
+
+	printf("__tds__GetNetworkInterfaces\n"); 
+	return SOAP_OK; 
+}
+/** Web service operation '__tds__SetNetworkInterfaces' (returns SOAP_OK or error code) */
+SOAP_FMAC5 int SOAP_FMAC6 __tds__SetNetworkInterfaces(struct soap*soap, _tds__SetNetworkInterfaces *tds__SetNetworkInterfaces, _tds__SetNetworkInterfacesResponse &tds__SetNetworkInterfacesResponse)
+{ 
+	OnvifServer *onvif_server = (OnvifServer*)soap->user;
+	tt__NetworkInterfaceSetConfiguration *netinter = tds__SetNetworkInterfaces->NetworkInterface;
+	if (netinter->Enabled != NULL && *(netinter->Enabled) && netinter->IPv4 != NULL && 
+		(netinter->IPv4->DHCP == NULL || !*(netinter->IPv4->DHCP))
+		&& netinter->IPv4->Enabled!=NULL && *(netinter->IPv4->Enabled))
+	{
+		tt__IPv4NetworkInterfaceSetConfiguration *ipv4set = netinter->IPv4;
+		if (ipv4set->Manual.size() > 0)
+		{
+			tt__PrefixedIPv4Address *ipv4addr = ipv4set->Manual[0];
+			//ipv4addr->Address;
+			//ipv4addr->PrefixLength;
+			SetIpv4Address(onvif_server->GetNetworkInterfaceIdx(), ipv4addr->Address, ipv4addr->PrefixLength);
+		}
+	}
+	printf("__tds__SetNetworkInterfaces\n"); 
+	return SOAP_OK; 
+}
+/** Web service operation '__tds__GetNetworkDefaultGateway' (returns SOAP_OK or error code) */
+SOAP_FMAC5 int SOAP_FMAC6 __tds__GetNetworkDefaultGateway(struct soap*soap, _tds__GetNetworkDefaultGateway *tds__GetNetworkDefaultGateway, _tds__GetNetworkDefaultGatewayResponse &tds__GetNetworkDefaultGatewayResponse)
+{
+	OnvifServer *onvif_server = (OnvifServer*)soap->user;
+	bool dhcp_enabled;
+	std::string addr, gateway;
+	int prefix_length;
+
+	int idx = onvif_server->GetNetworkInterfaceIdx();
+	GetIpv4Address(idx, dhcp_enabled, addr, prefix_length, gateway);
+	tt__NetworkGateway *cur_gateway = soap_new_tt__NetworkGateway(soap);
+	tds__GetNetworkDefaultGatewayResponse.NetworkGateway = cur_gateway;
+	cur_gateway->IPv4Address.push_back(gateway);
+	printf("__tds__GetNetworkDefaultGateway\n"); 
+	return SOAP_OK; 
+}
+/** Web service operation '__tds__SetNetworkDefaultGateway' (returns SOAP_OK or error code) */
+SOAP_FMAC5 int SOAP_FMAC6 __tds__SetNetworkDefaultGateway(struct soap*soap, _tds__SetNetworkDefaultGateway *tds__SetNetworkDefaultGateway, _tds__SetNetworkDefaultGatewayResponse &tds__SetNetworkDefaultGatewayResponse)
+{ 
+	OnvifServer *onvif_server = (OnvifServer*)soap->user;
+	int idx = onvif_server->GetNetworkInterfaceIdx();
+	if (tds__SetNetworkDefaultGateway->IPv4Address.size() > 0)
+	{
+		std::string set_gateway = tds__SetNetworkDefaultGateway->IPv4Address[0];
+		SetGateway(idx, set_gateway);
+	}
+	printf("__tds__SetNetworkDefaultGateway\n"); 
+	return SOAP_OK; 
+}
+/** Web service operation '__tds__GetDNS' (returns SOAP_OK or error code) */
+SOAP_FMAC5 int SOAP_FMAC6 __tds__GetDNS(struct soap*soap, _tds__GetDNS *tds__GetDNS, _tds__GetDNSResponse &tds__GetDNSResponse)
+{ 
+	printf("__tds__GetDNS\n"); 
+	return SOAP_OK; 
+}
+/** Web service operation '__tds__SetDNS' (returns SOAP_OK or error code) */
+SOAP_FMAC5 int SOAP_FMAC6 __tds__SetDNS(struct soap*soap, _tds__SetDNS *tds__SetDNS, _tds__SetDNSResponse &tds__SetDNSResponse){ printf("__tds__SetDNS\n"); return SOAP_OK; }
+
+/** Web service operation '__tds__GetNetworkProtocols' (returns SOAP_OK or error code) */
+SOAP_FMAC5 int SOAP_FMAC6 __tds__GetNetworkProtocols(struct soap*, _tds__GetNetworkProtocols *tds__GetNetworkProtocols, _tds__GetNetworkProtocolsResponse &tds__GetNetworkProtocolsResponse){ printf("__tds__GetNetworkProtocols\n"); return SOAP_OK; }
+/** Web service operation '__tds__SetNetworkProtocols' (returns SOAP_OK or error code) */
+SOAP_FMAC5 int SOAP_FMAC6 __tds__SetNetworkProtocols(struct soap*, _tds__SetNetworkProtocols *tds__SetNetworkProtocols, _tds__SetNetworkProtocolsResponse &tds__SetNetworkProtocolsResponse){ printf("__tds__SetNetworkProtocols\n"); return SOAP_OK; }
+
+/** Web service operation '__tds__SystemReboot' (returns SOAP_OK or error code) */
+SOAP_FMAC5 int SOAP_FMAC6 __tds__SystemReboot(struct soap*, _tds__SystemReboot *tds__SystemReboot, _tds__SystemRebootResponse &tds__SystemRebootResponse)
+{ 
+	ShutdownSystem(true);
+	printf("__tds__SystemReboot\n"); 
+	return SOAP_OK; 
+}
+
 /** Web service operation '__tds__SetSystemFactoryDefault' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __tds__SetSystemFactoryDefault(struct soap*, _tds__SetSystemFactoryDefault *tds__SetSystemFactoryDefault, _tds__SetSystemFactoryDefaultResponse &tds__SetSystemFactoryDefaultResponse){ printf("__tds__SetSystemFactoryDefault\n"); return SOAP_OK; }
 /** Web service operation '__tds__UpgradeSystemFirmware' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __tds__UpgradeSystemFirmware(struct soap*, _tds__UpgradeSystemFirmware *tds__UpgradeSystemFirmware, _tds__UpgradeSystemFirmwareResponse &tds__UpgradeSystemFirmwareResponse){ printf("__tds__UpgradeSystemFirmware\n"); return SOAP_OK; }
-/** Web service operation '__tds__SystemReboot' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__SystemReboot(struct soap*, _tds__SystemReboot *tds__SystemReboot, _tds__SystemRebootResponse &tds__SystemRebootResponse){ printf("__tds__SystemReboot\n"); return SOAP_OK; }
 /** Web service operation '__tds__RestoreSystem' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __tds__RestoreSystem(struct soap*, _tds__RestoreSystem *tds__RestoreSystem, _tds__RestoreSystemResponse &tds__RestoreSystemResponse){ printf("__tds__RestoreSystem\n"); return SOAP_OK; }
 /** Web service operation '__tds__GetSystemBackup' (returns SOAP_OK or error code) */
@@ -116,11 +332,6 @@ SOAP_FMAC5 int SOAP_FMAC6 __tds__SetScopes(struct soap*, _tds__SetScopes *tds__S
 SOAP_FMAC5 int SOAP_FMAC6 __tds__AddScopes(struct soap*, _tds__AddScopes *tds__AddScopes, _tds__AddScopesResponse &tds__AddScopesResponse){ printf("__tds__AddScopes\n"); return SOAP_OK; }
 /** Web service operation '__tds__RemoveScopes' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __tds__RemoveScopes(struct soap*, _tds__RemoveScopes *tds__RemoveScopes, _tds__RemoveScopesResponse &tds__RemoveScopesResponse){ printf("__tds__RemoveScopes\n"); return SOAP_OK; }
-/** Web service operation '__tds__GetDiscoveryMode' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__GetDiscoveryMode(struct soap*, _tds__GetDiscoveryMode *tds__GetDiscoveryMode, _tds__GetDiscoveryModeResponse &tds__GetDiscoveryModeResponse){ printf("__tds__GetDiscoveryMode\n"); return SOAP_OK; }
-/** Web service operation '__tds__SetDiscoveryMode' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__SetDiscoveryMode(struct soap*, _tds__SetDiscoveryMode *tds__SetDiscoveryMode, _tds__SetDiscoveryModeResponse &tds__SetDiscoveryModeResponse){ printf("__tds__SetDiscoveryMode\n"); return SOAP_OK; }
-/** Web service operation '__tds__GetRemoteDiscoveryMode' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __tds__GetRemoteDiscoveryMode(struct soap*, _tds__GetRemoteDiscoveryMode *tds__GetRemoteDiscoveryMode, _tds__GetRemoteDiscoveryModeResponse &tds__GetRemoteDiscoveryModeResponse){ printf("__tds__GetRemoteDiscoveryMode\n"); return SOAP_OK; }
 /** Web service operation '__tds__SetRemoteDiscoveryMode' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __tds__SetRemoteDiscoveryMode(struct soap*, _tds__SetRemoteDiscoveryMode *tds__SetRemoteDiscoveryMode, _tds__SetRemoteDiscoveryModeResponse &tds__SetRemoteDiscoveryModeResponse){ printf("__tds__SetRemoteDiscoveryMode\n"); return SOAP_OK; }
@@ -144,16 +355,8 @@ SOAP_FMAC5 int SOAP_FMAC6 __tds__SetUser(struct soap*, _tds__SetUser *tds__SetUs
 SOAP_FMAC5 int SOAP_FMAC6 __tds__GetWsdlUrl(struct soap*, _tds__GetWsdlUrl *tds__GetWsdlUrl, _tds__GetWsdlUrlResponse &tds__GetWsdlUrlResponse){ printf("__tds__GetWsdlUrl\n"); return SOAP_OK; }
 /** Web service operation '__tds__SetDPAddresses' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __tds__SetDPAddresses(struct soap*, _tds__SetDPAddresses *tds__SetDPAddresses, _tds__SetDPAddressesResponse &tds__SetDPAddressesResponse){ printf("__tds__SetDPAddresses\n"); return SOAP_OK; }
-/** Web service operation '__tds__GetHostname' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__GetHostname(struct soap*, _tds__GetHostname *tds__GetHostname, _tds__GetHostnameResponse &tds__GetHostnameResponse){ printf("__tds__GetHostname\n"); return SOAP_OK; }
-/** Web service operation '__tds__SetHostname' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__SetHostname(struct soap*, _tds__SetHostname *tds__SetHostname, _tds__SetHostnameResponse &tds__SetHostnameResponse){ printf("__tds__SetHostname\n"); return SOAP_OK; }
 /** Web service operation '__tds__SetHostnameFromDHCP' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __tds__SetHostnameFromDHCP(struct soap*, _tds__SetHostnameFromDHCP *tds__SetHostnameFromDHCP, _tds__SetHostnameFromDHCPResponse &tds__SetHostnameFromDHCPResponse){ printf("__tds__SetHostnameFromDHCP\n"); return SOAP_OK; }
-/** Web service operation '__tds__GetDNS' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__GetDNS(struct soap*, _tds__GetDNS *tds__GetDNS, _tds__GetDNSResponse &tds__GetDNSResponse){ printf("__tds__GetDNS\n"); return SOAP_OK; }
-/** Web service operation '__tds__SetDNS' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__SetDNS(struct soap*, _tds__SetDNS *tds__SetDNS, _tds__SetDNSResponse &tds__SetDNSResponse){ printf("__tds__SetDNS\n"); return SOAP_OK; }
 /** Web service operation '__tds__GetNTP' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __tds__GetNTP(struct soap*, _tds__GetNTP *tds__GetNTP, _tds__GetNTPResponse &tds__GetNTPResponse){ printf("__tds__GetNTP\n"); return SOAP_OK; }
 /** Web service operation '__tds__SetNTP' (returns SOAP_OK or error code) */
@@ -162,18 +365,6 @@ SOAP_FMAC5 int SOAP_FMAC6 __tds__SetNTP(struct soap*, _tds__SetNTP *tds__SetNTP,
 SOAP_FMAC5 int SOAP_FMAC6 __tds__GetDynamicDNS(struct soap*, _tds__GetDynamicDNS *tds__GetDynamicDNS, _tds__GetDynamicDNSResponse &tds__GetDynamicDNSResponse){ printf("__tds__GetDynamicDNS\n"); return SOAP_OK; }
 /** Web service operation '__tds__SetDynamicDNS' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __tds__SetDynamicDNS(struct soap*, _tds__SetDynamicDNS *tds__SetDynamicDNS, _tds__SetDynamicDNSResponse &tds__SetDynamicDNSResponse){ printf("__tds__SetDynamicDNS\n"); return SOAP_OK; }
-/** Web service operation '__tds__GetNetworkInterfaces' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__GetNetworkInterfaces(struct soap*, _tds__GetNetworkInterfaces *tds__GetNetworkInterfaces, _tds__GetNetworkInterfacesResponse &tds__GetNetworkInterfacesResponse){ printf("__tds__GetNetworkInterfaces\n"); return SOAP_OK; }
-/** Web service operation '__tds__SetNetworkInterfaces' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__SetNetworkInterfaces(struct soap*, _tds__SetNetworkInterfaces *tds__SetNetworkInterfaces, _tds__SetNetworkInterfacesResponse &tds__SetNetworkInterfacesResponse){ printf("__tds__SetNetworkInterfaces\n"); return SOAP_OK; }
-/** Web service operation '__tds__GetNetworkProtocols' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__GetNetworkProtocols(struct soap*, _tds__GetNetworkProtocols *tds__GetNetworkProtocols, _tds__GetNetworkProtocolsResponse &tds__GetNetworkProtocolsResponse){ printf("__tds__GetNetworkProtocols\n"); return SOAP_OK; }
-/** Web service operation '__tds__SetNetworkProtocols' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__SetNetworkProtocols(struct soap*, _tds__SetNetworkProtocols *tds__SetNetworkProtocols, _tds__SetNetworkProtocolsResponse &tds__SetNetworkProtocolsResponse){ printf("__tds__SetNetworkProtocols\n"); return SOAP_OK; }
-/** Web service operation '__tds__GetNetworkDefaultGateway' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__GetNetworkDefaultGateway(struct soap*, _tds__GetNetworkDefaultGateway *tds__GetNetworkDefaultGateway, _tds__GetNetworkDefaultGatewayResponse &tds__GetNetworkDefaultGatewayResponse){ printf("__tds__GetNetworkDefaultGateway\n"); return SOAP_OK; }
-/** Web service operation '__tds__SetNetworkDefaultGateway' (returns SOAP_OK or error code) */
-SOAP_FMAC5 int SOAP_FMAC6 __tds__SetNetworkDefaultGateway(struct soap*, _tds__SetNetworkDefaultGateway *tds__SetNetworkDefaultGateway, _tds__SetNetworkDefaultGatewayResponse &tds__SetNetworkDefaultGatewayResponse){ printf("__tds__SetNetworkDefaultGateway\n"); return SOAP_OK; }
 /** Web service operation '__tds__GetZeroConfiguration' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __tds__GetZeroConfiguration(struct soap*, _tds__GetZeroConfiguration *tds__GetZeroConfiguration, _tds__GetZeroConfigurationResponse &tds__GetZeroConfigurationResponse){ printf("__tds__GetZeroConfiguration\n"); return SOAP_OK; }
 /** Web service operation '__tds__SetZeroConfiguration' (returns SOAP_OK or error code) */

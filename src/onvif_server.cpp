@@ -11,7 +11,8 @@
 
 //const int MAX_BUF_LEN = 255;
 OnvifServer::OnvifServer():
-discovery_soap_(NULL), onvif_soap_(NULL)
+discovery_soap_(NULL), onvif_soap_(NULL),
+manufacturer_("suresecure")
 {}
 OnvifServer::~OnvifServer()
 {}
@@ -29,10 +30,11 @@ const std::vector<ProfileInfo>& OnvifServer::GetProfiles()
 
 void DiscoveryServerThread(void *user);
 void OnvifServerThread(void* user);
-int OnvifServer::Start(std::string host, int port)
+int OnvifServer::Start(int idx, int port)
 {
 	stop_ = false;
-	host_ = host;
+	//host_ = host;
+	network_interface_idx_ = idx;
 	port_ = port;
 
 	discovery_soap_ = soap_new1(SOAP_IO_UDP | SO_BROADCAST);
@@ -58,6 +60,8 @@ void DiscoveryServerThread(void *user)
 	struct soap* soap = onvif_server->GetDiscoverySoap();
 	soap->bind_flags = SO_REUSEADDR;
 	SOCKET sk = soap_bind(soap, NULL, 3702, 100);
+	bool yes = true;
+	setsockopt(soap->master, IPPROTO_IP, IP_PKTINFO, (const char*)&yes, sizeof(yes));
 
 	//if(SOAP_OK!=soap_wsdd_Hello(soap, SOAP_WSDD_ADHOC, "soap.udp://239.255.255.250:3702", soap_wsa_rand_uuid(soap), NULL,
 	//	NULL,
@@ -67,15 +71,15 @@ void DiscoveryServerThread(void *user)
 	struct ip_mreq multicastRequest;
 	multicastRequest.imr_multiaddr.s_addr = inet_addr("239.255.255.250");
 	//如果有多个网卡，则一般要指定
-	if (onvif_server->GetHost().empty())
+	//if (onvif_server->GetHost().empty())
 		multicastRequest.imr_interface.s_addr = htonl(INADDR_ANY);
-	else
-		multicastRequest.imr_interface.s_addr = inet_addr(onvif_server->GetHost().c_str());
+	//else
+	//	multicastRequest.imr_interface.s_addr = inet_addr(onvif_server->GetHost().c_str());
 	setsockopt(soap->master, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char*)&multicastRequest, sizeof(multicastRequest));
 
 	while (true)
 	{
-		soap_wsdd_listen(soap, -500); // listen for messages for 1 ms
+		soap_wsdd_listen(soap, 0); // listen for messages for 1 ms
 		if (onvif_server->IsStop())
 			break;
 	}
@@ -88,10 +92,10 @@ void OnvifServerThread(void* user)
 	struct soap* soap = onvif_server->GetOnvifSoap();
 	soap->accept_timeout = soap->recv_timeout = soap->recv_timeout = soap->send_timeout = -500;
 	SOCKET s;
-	if (onvif_server->GetHost().empty())
+	//if (onvif_server->GetHost().empty())
 		s = soap_bind(soap, NULL, onvif_server->GetPort(), 100);
-	else
-		s = soap_bind(soap, onvif_server->GetHost().c_str(), onvif_server->GetPort(), 100);
+	//else
+	//	s = soap_bind(soap, onvif_server->GetHost().c_str(), onvif_server->GetPort(), 100);
 
 	if (!soap_valid_socket(s))
 		return;
@@ -110,24 +114,4 @@ void OnvifServerThread(void* user)
 		if (onvif_server->IsStop())
 			break;
 	}
-}
-
-int main()
-{
-	OnvifServer onvif_server;
-	ProfileInfo info;
-	info.height = 640;
-	info.width = 480;
-	info.name = "first";
-	info.frame_rate = 30;
-	info.uri = "first_uri";
-	onvif_server.AddProfile(info);
-	info.name = "second";
-	info.uri = "second_uri";
-	onvif_server.AddProfile(info);
-	onvif_server.Start(std::string(), 12000);
-	int x;
-	std::cin >> x;
-	onvif_server.Stop();
-	return 0;
 }
