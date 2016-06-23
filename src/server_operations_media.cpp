@@ -2,6 +2,7 @@
 #include "soapH.h"
 #include "onvif_server.h"
 
+using namespace suresecure_onvif;
 /** Web service operation '__trt__GetServiceCapabilities' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __trt__GetServiceCapabilities(struct soap*, _trt__GetServiceCapabilities *trt__GetServiceCapabilities, _trt__GetServiceCapabilitiesResponse &trt__GetServiceCapabilitiesResponse)
 {

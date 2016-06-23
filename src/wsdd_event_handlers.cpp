@@ -1,4 +1,8 @@
 #include "wsddapi.h"
+#include "onvif_server.h"
+#include "system_utils.h"
+
+using namespace suresecure_onvif;
 
 int SOAP_ENV__Fault(struct soap *soap, char *faultcode, char *faultstring, char *faultactor, struct SOAP_ENV__Detail *detail, struct SOAP_ENV__Code *SOAP_ENV__Code, struct SOAP_ENV__Reason *SOAP_ENV__Reason, char *SOAP_ENV__Node, char *SOAP_ENV__Role, struct SOAP_ENV__Detail *SOAP_ENV__Detail)
 {
@@ -21,6 +25,15 @@ void wsdd_event_Bye(struct soap *soap, unsigned int InstanceId, const char *Sequ
 //#include <Mswsock.h>
 soap_wsdd_mode wsdd_event_Probe(struct soap *soap, const char *MessageID, const char *ReplyTo, const char *Types, const char *Scopes, const char *MatchBy, struct wsdd__ProbeMatchesType *matches)
 {
+	OnvifServer *onvif_server = (OnvifServer*)soap->user;
+	bool dhcp_enabled;
+	std::string addr, gateway;
+	int prefix_length;
+
+	int idx = onvif_server->GetNetworkInterfaceIdx();
+	GetIpv4Address(idx, dhcp_enabled, addr, prefix_length, gateway);
+	std::string xaddr = "http://" + addr + ":" + std::to_string(onvif_server->GetPort());
+
 	//wsarecvmsg
 	printf("%s,%d\n", __FUNCTION__, __LINE__);
 	printf("MessageID:%s\n", MessageID);
@@ -40,7 +53,7 @@ soap_wsdd_mode wsdd_event_Probe(struct soap *soap, const char *MessageID, const 
 		NULL,
 		NULL,
 		//NULL, 10);
-		"http://127.0.0.1:12000", 10);
+		xaddr.c_str(), 10);
 
 	//<d:Scopes>onvif://www.onvif.org/Profile/Streaming onvif://www.onvif.org/Profile/G onvif://www.onvif.org/Profile/C onvif://www.onvif.org/location/country/china onvif://www.onvif.org/type/video_encoder onvif://www.onvif.org/name/IP-Camera onvif://www.onvif.org/hardware/HI3518C </d:Scopes>
 	//if (soap_wsdd_ProbeMatches(soap, "soap.udp://239.255.255.250:3702", soap_wsa_rand_uuid(soap), MessageID, NULL, matches) != SOAP_OK) 

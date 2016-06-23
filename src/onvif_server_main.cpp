@@ -3,28 +3,24 @@
 
 #include "wsddapi.h"
 #include "onvif_server.h"
+//#include "glog/logging.h"
 
 #include "system_utils.h"
 
-int main()
+using namespace suresecure_onvif;
+
+int main(int argc, char**argv)
 {
-	//GetTimeZone();
-	//return 0;
-	//system("");
-	int idx;
+	//google::InitGoogleLogging(argv[0]);
+	//google::LogToStderr();
+	//LOG(INFO) << "xyz";
+	
+	int idx = -1;
 	bool dhcp_enabled;
 	std::string addr, gateway;
 	int prefix_length;
 	GetIpv4Address(idx, dhcp_enabled, addr, prefix_length, gateway);
-	//SetNetworkInterface(28, "192.168.1.28", 24, "192.168.1.1");
-	//SetNetworkInterface(28, "192.168.1.29", 24);
-	//SetGateway(28, "192.168.1.110");
-//void ShutdownSystem(bool reboot);
-	//unsigned long long x = GetCpuFreq();//获取CPU频率,单位: MHZ
-	//std::string y = GetCpuManID();
-	//std::string z = GetCpuType();
 
-	
 	OnvifServer onvif_server;
 	ProfileInfo info;
 	info.height = 640;

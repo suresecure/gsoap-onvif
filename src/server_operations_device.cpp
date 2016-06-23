@@ -10,6 +10,7 @@
 
 //#define LOCAL_ADDRESS ()
 
+using namespace suresecure_onvif;
 /** Web service operation '__tds__GetCapabilities' (returns SOAP_OK or error code) */
 SOAP_FMAC5 int SOAP_FMAC6 __tds__GetCapabilities(struct soap*soap, _tds__GetCapabilities *tds__GetCapabilities, _tds__GetCapabilitiesResponse &tds__GetCapabilitiesResponse)
 {
